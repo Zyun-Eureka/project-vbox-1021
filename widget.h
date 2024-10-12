@@ -31,13 +31,8 @@ public:
     bool eventFilter(QObject *watched, QEvent *event);
     void _deleteBefore();
 
-
-
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
-
-    void readimg(int head_i, QList<QImage> *list);
-
 
 private:
 

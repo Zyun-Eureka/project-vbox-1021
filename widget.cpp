@@ -152,15 +152,6 @@ void Widget::stateChanged(QAbstractAnimation::State news, QAbstractAnimation::St
     }
 }
 
-void Widget::readimg(int head_i,QList<QImage> *list)
-{
-//    ui->img_1->u_img((*list)[head_i%4]);
-//    ui->img_2->u_img((*list)[(head_i+3)%4]);
-//    ui->img_3->u_img((*list)[(head_i+2)%4]);
-//    ui->img_4->u_img((*list)[(head_i+1)%4]);
-}
-
-
 void Widget::updatepa()
 {
     if(state){

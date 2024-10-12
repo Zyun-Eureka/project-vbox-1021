@@ -36,15 +36,3 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-
-#win32:CONFIG(release, debug|release): LIBS += D:/Libs/VLC-Qt_1.1.0_win64_msvc2015/lib/VLC*
-#else:win32:CONFIG(debug, debug|release): LIBS += D:/Libs/VLC-Qt_1.1.0_win64_msvc2015/libd/VLC*
-
-#INCLUDEPATH += D:/Libs/VLC-Qt_1.1.0_win64_msvc2015/include
-#DEPENDPATH += D:/Libs/VLC-Qt_1.1.0_win64_msvc2015/include
-
-#win32: LIBS += $$PWD/../../Libs/VLC-2.2.4/lib/lib*.lib
-
-#INCLUDEPATH += $$PWD/../../Libs/VLC-2.2.4/include
-#DEPENDPATH += $$PWD/../../Libs/VLC-2.2.4/include
