@@ -1,10 +1,15 @@
 #include "my_wi.h"
+#include <QDebug>
 
 my_wi::my_wi(QWidget *parent)
     : QWidget{parent}
 {
     installEventFilter(this);
-//    _oimage = QImage("F://imge.jpg");
+    lists = nullptr;
+    setMinimumHeight(120);
+    _rind =_nind= -1;
+    click = false;
+    _cimage = nullptr;
 
 }
 
@@ -14,27 +19,47 @@ bool my_wi::eventFilter(QObject *watched, QEvent *event)
         QPainter pa(this);
         QPen pen;
         pen.setColor(Qt::lightGray);
-        pen.setWidth(1);
+        if(!_image.isNull()){
+            pa.drawImage(0,0,_image);
+            if(lists->at(_rind)->click){
+                pen.setColor(Qt::red);
+            }
+        }
         pa.setPen(pen);
         pa.drawRect(0,0,width()-pen.width()*2,height()-pen.width()*2);
-        if(_image.isNull())return false;
-        pa.drawImage(_ix,_iy,_image);
     }else if(event->type()==QEvent::Resize){
-        if(_oimage.isNull())return false;
-        _image = _oimage.scaled(size(),Qt::KeepAspectRatio);
-        _ix = (width()-_image.width())/2.0;
-        _iy = (height()-_image.height())/2.0;
-        update();
+        _reisze();
+    }else if(event->type()==QEvent::MouseButtonPress){
+        if(_cimage==nullptr)return true;
+        _cimage->clicked();
     }
     return QWidget::eventFilter(watched,event);;
 }
 
-void my_wi::u_img(QImage i)
+void my_wi::setImgs(QList<my_img*> *i)
 {
-    if(i.isNull())return;
-    _oimage = i;
-    _image = _oimage.scaled(size(),Qt::KeepAspectRatio);
-    _ix = (width()-_image.width())/2.0;
-    _iy = (height()-_image.height())/2.0;
+    lists = i;
+}
+
+void my_wi::setindex(int index)
+{
+    _ind = index;
+}
+
+void my_wi::_reisze()
+{
+    if(_cimage==nullptr||_cimage->img.isNull())return;
+    _image = _cimage->img.scaled(QSize(width(),1000),Qt::KeepAspectRatio);
+    setMinimumHeight(_image.height());
     update();
+}
+
+void my_wi::readImg(int img_i)
+{
+    _rind = (img_i+_ind)%lists->count();
+    if(lists!=nullptr||_rind==-1){
+        _cimage = (*lists)[_rind];
+        _cimage->wi = this;
+        _reisze();
+    }
 }

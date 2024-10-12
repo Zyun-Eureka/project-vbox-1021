@@ -5,34 +5,23 @@
 #include <QMouseEvent>
 #include <QDebug>
 
+#include <QComboBox>
+
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
 
-    // vlc init
-    _instance = new VlcInstance(VlcCommon::args(),this);
-    _player = new VlcMediaPlayer(_instance);
-    _player->setVideoWidget(ui->video);
-    connect(_player,SIGNAL(stateChanged()),this,SLOT(vlc_stateChanged()));
-    connect(_player,SIGNAL(error()),this,SLOT(vlcerror()));
-    // vlc info
-    _info = new QWidget(this);
-    _info->show();
-    _tcount = -1;
-    _pflag = false;
-    // info timer
-    timer = new QTimer(this);
-    connect(timer,SIGNAL(timeout()),this,SLOT(timeOut()));
-    timer->start(1000);
-
     // img list init
     reader = new img_reader();
     thread = new QThread(this);
-    reader->setnum(4);
+    reader->setnum(10);
     reader->moveToThread(thread);
-    connect(reader,SIGNAL(readReady(int,QList<QImage> *)),this,SLOT(readimg(int,QList<QImage> *)));
+//    connect(reader,SIGNAL(click_index(int)),this,SIGNAL(_sig_img_change(int)));
+//    connect(this,SIGNAL(_sig_img_change(int)),reader,SLOT(c_index(int)));
+//    connect(reader,SIGNAL(readReady(int,QList<QImage> *)),this,SLOT(readimg(int,QList<QImage> *)));
     thread->start();
     reader->start();
 
@@ -51,16 +40,32 @@ Widget::Widget(QWidget *parent)
     //
     installEventFilter(this);
     flist->installEventFilter(this);
-    _info->installEventFilter(this);
     ui->video->installEventFilter(this);
     ui->label->installEventFilter(this);
 
+    C = nullptr;
+
+    listLayout = new QVBoxLayout();
+    _mlist = new QWidget();
+    my_wi *w;
+    for(int i = 10;i>0;i--){
+        w = new my_wi();
+        lists.push_back(w);
+        listLayout->addWidget(w);
+        connect(reader,SIGNAL(readReady(int)),w,SLOT(readImg(int)));
+        w->setindex(i);
+        w->setImgs(reader->getList());
+//        connect(w,SIGNAL(click_index(int)),this,SIGNAL(_sig_img_change(int)));
+//        connect(this,SIGNAL(_sig_img_change(int)),w,SLOT(readindex(int)));
+    }
+    _mlist->setLayout(listLayout);
+    ui->list->setWidget(_mlist);
+    ui->list->setWidgetResizable(true);
 }
 
 Widget::~Widget()
 {
     _deleteBefore();
-    delete timer;
     delete reader;
     delete thread;
     delete ui;
@@ -88,28 +93,39 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 state = false;
             }
         }
-    }else if(watched == _info){
-        if(event->type()==QEvent::Paint){
-            QPainter pa(_info);
-            pa.setPen(Qt::white);
-            if(_player->state()==Vlc::State::Idle){
-                pa.drawText(QRectF(0,0,_info->width(),_info->height()),Qt::AlignCenter,"无视频");
-            }else if(_player->state()==Vlc::State::Opening){
-                pa.drawText(QRectF(0,0,_info->width(),_info->height()),Qt::AlignCenter,"[连接中]");
-            }else if(_player->state()==Vlc::State::Error){
-                pa.drawText(QRectF(0,0,_info->width(),_info->height()),Qt::AlignCenter,QString("[连接到　%1　异常]\n将在 %2 秒后重试").arg(url).arg(_tcount));
-            }
-        }
     }else if(watched == ui->video){
-        if(event->type()==QEvent::Resize){
-            _info->setGeometry(QRect(ui->video->mapTo(this,QPoint(0,0)),ui->video->size()));
+        if(event->type()==QEvent::Paint){
+            QPainter pa(ui->video);
+            pa.fillRect(ui->video->rect(),Qt::black);
         }
     }else if(watched == ui->label){
         if(event->type()==QEvent::ContextMenu){
-            url = QInputDialog::getText(this,"设置地址","请输入摄像头地址(rtsp://XXXX:XX/path)");
-            if (url.isEmpty())
-                return true;
-            newconnect();
+            QDialog *d = new QDialog();
+            d->setGeometry(x(),y(),200,100);
+            QComboBox * box = new QComboBox(d);
+            QPushButton *bt = new QPushButton(d);
+            bt->setGeometry(50,60,100,30);
+            bt->setText("确定");
+            connect(bt,&QPushButton::released,[=](){
+                d->close();
+                if(C!=nullptr){
+                    C->stop();
+                    delete C;
+                    C=nullptr;
+                }
+                C = new QCamera(QCameraInfo::availableCameras()[box->currentIndex()],this);
+                C->setViewfinder(ui->video);
+                C->start();
+            });
+            box->setGeometry(30,20,140,30);
+            for(QCameraInfo i:QCameraInfo::availableCameras()){
+                box->addItem(i.description());
+            }
+            d->setWindowTitle("选择相机");
+            d->exec();
+            delete bt;
+            delete box;
+            delete d;
         }else if(event->type()==QEvent::MouseButtonDblClick){
             if(windowState()!=Qt::WindowFullScreen){
                 setWindowState(Qt::WindowFullScreen);
@@ -136,43 +152,12 @@ void Widget::stateChanged(QAbstractAnimation::State news, QAbstractAnimation::St
     }
 }
 
-void Widget::vlc_stateChanged()
-{
-    ui->video->update();
-    if(_player->state()==Vlc::State::Playing){
-        _info->hide();
-        if(_player->hasVout()&&!_pflag){
-            _pflag = true;
-            newconnect();
-        }
-    }else if(_player->state()==Vlc::State::Error){
-        _info->show();
-        _pflag = false;
-        _tcount = 5;
-    }
-}
-
-void Widget::timeOut()
-{
-    if(_tcount>0){
-        _tcount--;
-        _info->update();
-    }else if(_tcount == 0){
-        _tcount = -1;
-        newconnect();
-    }
-}
-
 void Widget::readimg(int head_i,QList<QImage> *list)
 {
-    ui->img_1->u_img((*list)[head_i%4]);
-    ui->img_2->u_img((*list)[(head_i+3)%4]);
-    ui->img_3->u_img((*list)[(head_i+2)%4]);
-    ui->img_4->u_img((*list)[(head_i+1)%4]);
-}
-
-void Widget::vlcerror()
-{
+//    ui->img_1->u_img((*list)[head_i%4]);
+//    ui->img_2->u_img((*list)[(head_i+3)%4]);
+//    ui->img_3->u_img((*list)[(head_i+2)%4]);
+//    ui->img_4->u_img((*list)[(head_i+1)%4]);
 }
 
 
@@ -187,18 +172,8 @@ void Widget::updatepa()
     pa->setEndValue(QPoint(width()-flist->width(),0));
 }
 
-void Widget::newconnect()
-{
-    _media = new VlcMedia(url, _instance);
-//    _media->setOption(":network-caching=2000");
-    _media->setOption(":ffmpeg-hw=1");
-    _media->setOption(":vout=opengl:sout-all:sout-keep");
-    _player->open(_media);
-}
-
 void Widget::_deleteBefore()
 {
-    timer->stop();
     reader->stop();
     thread->quit();
     thread->wait();

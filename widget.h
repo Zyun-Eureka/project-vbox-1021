@@ -6,19 +6,14 @@
 #include <QPropertyAnimation>
 #include <QPainter>
 #include <QTimer>
+#include <QCamera>
+#include <QCameraInfo>
 
-
-// VLC-Qt
-#include <VLCQtCore/Media.h>
-#include <VLCQtCore/MediaPlayer.h>
-#include <VLCQtCore/Instance.h>
-#include <VLCQtCore/Common.h>
-//
 #include "funlist.h"
 #include "img_reader.h"
 #include "my_wi.h"
 #include <QThread>
-
+#include <QVBoxLayout>
 
 
 QT_BEGIN_NAMESPACE
@@ -34,26 +29,25 @@ public:
     ~Widget();
 
     bool eventFilter(QObject *watched, QEvent *event);
-    void newconnect();
     void _deleteBefore();
+
+
 
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
 
-
-    void vlc_stateChanged();
-    void timeOut();
     void readimg(int head_i, QList<QImage> *list);
 
-    void vlcerror();
 
 private:
-    // list
 
-    //
     bool _pflag;
     int _tcount;
     QString url;
+
+    QWidget* _mlist;
+    QList<my_wi*> lists;
+    QVBoxLayout *listLayout;
     //
 
     void updatepa();
@@ -68,14 +62,7 @@ private:
     bool state;
     funlist* flist;
 
-    // vlc
-    VlcInstance *_instance;
-    VlcMedia *_media;
-    VlcMediaPlayer *_player;
-    //
-    QWidget * _info;
-    //
-    QTimer *timer;
+    QCamera *C;
 
     Ui::Widget *ui;
 };

@@ -118,8 +118,8 @@ void funlist::initTable()
 
 void funlist::addItemT(QString name)
 {
-    QStandardItem *item,*item_s = new QStandardItem("0");
-    item = new QStandardItem(name);
+    QStandardItem *item_s = new QStandardItem("0");
+    QStandardItem *item = new QStandardItem(name);
     item->setTextAlignment(Qt::AlignCenter);
     item_s->setTextAlignment(Qt::AlignCenter);
     _tableModel->appendRow({item,item_s});

@@ -9,11 +9,32 @@
 
 #include <QTimer>
 
-#include <QImage>
+#include "my_img.h"
 #include <QFile>
 
 #include <QThread>
 #include <QDateTime>
+
+class sig_thread: public QObject{
+    Q_OBJECT
+public:
+    sig_thread(){
+        thread = new QThread();
+        moveToThread(thread);
+        thread->start();
+    };
+    ~sig_thread(){
+        thread->quit();
+        thread->wait();
+//        thread->deleteLater();
+        delete thread;
+    }
+signals:
+    void _sig_img_change(const my_img*);
+private:
+    QThread* thread;
+};
+
 
 class img_reader : public QObject
 {
@@ -28,16 +49,26 @@ public:
     void start();
     void stop();
 
+    QList<my_img*>* getList();
+
 signals:
-    void readReady(int head_i,QList<QImage> *list);
+//    void _sig_img_change(const my_img*);
+    void readReady(int index);
+    void next();
+//    void readReady(int head_i,QList<QImage> *list);
     void run();
+//    void clickImg(QImage*);
+    void click_index(int inex);
+public slots:
+//    void cimgc(QImage*);
+    void c_index(int i);
 private slots:
     void loop();
 private:
+    sig_thread *_sig_thread;
+
     bool state;
-
-
-    QList<QImage> img_lists;
+    QList<my_img*> img_lists;
     QStringList filter;
     QStringList plist;
     QDir _idir;
@@ -46,6 +77,7 @@ private:
     int num;
 
     int index;
+    int cindex;
 
 };
 
