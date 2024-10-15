@@ -60,7 +60,8 @@ border:1px solid rgb(209, 209, 209);</string>
       <item>
        <widget class="QLabel" name="label_3">
         <property name="styleSheet">
-         <string notr="true">border:0px;</string>
+         <string notr="true">border:0px;
+font: 700 11pt &quot;微软雅黑&quot;;</string>
         </property>
         <property name="text">
          <string>&lt;&lt;</string>

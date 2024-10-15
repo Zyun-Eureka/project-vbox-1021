@@ -19,9 +19,6 @@ Widget::Widget(QWidget *parent)
     thread = new QThread(this);
     reader->setnum(10);
     reader->moveToThread(thread);
-//    connect(reader,SIGNAL(click_index(int)),this,SIGNAL(_sig_img_change(int)));
-//    connect(this,SIGNAL(_sig_img_change(int)),reader,SLOT(c_index(int)));
-//    connect(reader,SIGNAL(readReady(int,QList<QImage> *)),this,SLOT(readimg(int,QList<QImage> *)));
     thread->start();
     reader->start();
 
@@ -36,7 +33,9 @@ Widget::Widget(QWidget *parent)
     state = false;
     rs = false;
     updatepa();
-
+    // 动画倒计时器
+    timer = new QTimer();
+    connect(timer,SIGNAL(timeout()),this,SLOT(enterWindows()));
     //
     installEventFilter(this);
     flist->installEventFilter(this);
@@ -44,6 +43,8 @@ Widget::Widget(QWidget *parent)
     ui->label->installEventFilter(this);
 
     C = nullptr;
+    P = nullptr;
+    L = new QMediaPlaylist();
 
     listLayout = new QVBoxLayout();
     _mlist = new QWidget();
@@ -55,8 +56,6 @@ Widget::Widget(QWidget *parent)
         connect(reader,SIGNAL(readReady(int)),w,SLOT(readImg(int)));
         w->setindex(i);
         w->setImgs(reader->getList());
-//        connect(w,SIGNAL(click_index(int)),this,SIGNAL(_sig_img_change(int)));
-//        connect(this,SIGNAL(_sig_img_change(int)),w,SLOT(readindex(int)));
     }
     _mlist->setLayout(listLayout);
     ui->list->setWidget(_mlist);
@@ -83,14 +82,14 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         }
     }else if(watched == flist){
         if(event->type()==QEvent::Enter){
-            if(pa->state()==QAbstractAnimation::Stopped&&!state){
-                pa->start();
-                state = true;
-            }
+            // 鼠标放置后多少毫秒弹出
+            timer->start(3000);
         }else if(event->type()==QEvent::Leave){
+            timer->stop();
             if(pa->state()==QAbstractAnimation::Stopped&&state){
                 pa->start();
                 state = false;
+                flist->ishow();
             }
         }
     }else if(watched == ui->video){
@@ -100,12 +99,39 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         }
     }else if(watched == ui->label){
         if(event->type()==QEvent::ContextMenu){
+            // 标题右键弹窗
             QDialog *d = new QDialog();
             d->setGeometry(x(),y(),200,100);
             QComboBox * box = new QComboBox(d);
             QPushButton *bt = new QPushButton(d);
-            bt->setGeometry(50,60,100,30);
+            bt->setGeometry(25,60,90,30);
+            bt->setText("从文件播放");
+            connect(bt,&QPushButton::released,[=](){
+                if(C!=nullptr){
+                    C->stop();
+                    delete C;
+                    C=nullptr;
+                }
+                if(P!=nullptr){
+                    P->stop();
+                    delete P;
+                    P=nullptr;
+                }
+                L->clear();
+                QUrl url = QFileDialog::getOpenFileUrl(nullptr,"选择要播放的视频",QUrl(),"mp4视频文件 (*.mp4)");
+                if(!url.isEmpty()){
+                    d->close();
+                    P = new QMediaPlayer();
+                    L->addMedia(url);
+                    P->setVideoOutput(ui->video);
+                    P->setPlaylist(L);
+                    P->play();
+                }
+            });
+            bt = new QPushButton(d);
+            bt->setGeometry(125,60,50,30);
             bt->setText("确定");
+            box->setGeometry(25,20,150,30);
             connect(bt,&QPushButton::released,[=](){
                 d->close();
                 if(C!=nullptr){
@@ -117,7 +143,6 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 C->setViewfinder(ui->video);
                 C->start();
             });
-            box->setGeometry(30,20,140,30);
             for(QCameraInfo i:QCameraInfo::availableCameras()){
                 box->addItem(i.description());
             }
@@ -152,6 +177,17 @@ void Widget::stateChanged(QAbstractAnimation::State news, QAbstractAnimation::St
     }
 }
 
+void Widget::enterWindows()
+{
+    timer->stop();
+    if(pa->state()==QAbstractAnimation::Stopped&&!state){
+        pa->start();
+        state = true;
+        flist->ihide();
+    }
+}
+
+//重置右侧列表坐标
 void Widget::updatepa()
 {
     if(state){

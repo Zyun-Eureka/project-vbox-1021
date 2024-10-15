@@ -34,6 +34,9 @@ public:
 
     void addvalue(int index);
 
+    void ihide();
+    void ishow();
+
 private slots:
     void timeOut();
 private:

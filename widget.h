@@ -9,11 +9,16 @@
 #include <QCamera>
 #include <QCameraInfo>
 
+#include <QMediaPlaylist>
+#include <QMediaPlayer>
+
 #include "funlist.h"
 #include "img_reader.h"
 #include "my_wi.h"
 #include <QThread>
 #include <QVBoxLayout>
+
+#include <QFileDialog>
 
 
 QT_BEGIN_NAMESPACE
@@ -33,6 +38,7 @@ public:
 
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
+    void enterWindows();
 
 private:
 
@@ -46,7 +52,6 @@ private:
     //
 
     void updatepa();
-
     img_reader *reader;
     QThread *thread;
     int _img_index;
@@ -56,8 +61,12 @@ private:
     bool rs;
     bool state;
     funlist* flist;
-
+    //
+    QTimer *timer;
+    //
     QCamera *C;
+    QMediaPlaylist *L;
+    QMediaPlayer *P;
 
     Ui::Widget *ui;
 };

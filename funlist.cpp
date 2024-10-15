@@ -82,14 +82,6 @@ bool funlist::eventFilter(QObject *watched, QEvent *event)
                 bt->setMinimumHeight(bts.height());
             }
         }
-    }if(watched == this){
-        if(event->type()==QEvent::Enter){
-//            qDebug()<<"2";
-            ui->icon->hide();
-        }else if(event->type()==QEvent::Leave){
-//            qDebug()<<"2";
-            ui->icon->show();
-        }
     }
     return QWidget::eventFilter(watched,event);;
 }
@@ -99,6 +91,16 @@ void funlist::addvalue(int index)
     if(index>=_tableModel->rowCount()||index<0)return;
     _tableValues[index]++;
     _tableModel->item(index,1)->setText(QString::number(_tableValues[index]));
+}
+
+void funlist::ihide()
+{
+    ui->icon->hide();
+}
+
+void funlist::ishow()
+{
+    ui->icon->show();
 }
 
 void funlist::timeOut()
