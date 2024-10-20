@@ -38,7 +38,7 @@ void img_reader::setnum(int i)
     while (img_lists.count()<num) {
         y = new my_img();
         connect(y,SIGNAL(_sig_clicked(const my_img*)),_sig_thread,SIGNAL(_sig_img_change(const my_img*)));
-        connect(_sig_thread,SIGNAL(_sig_img_change(const my_img*)),y,SLOT(_slot_clicked(const my_img*)));
+        connect(_sig_thread,SIGNAL(_sig_img_change(const my_img*)),y,SLOT(_slot_clicked(const my_img*)),Qt::BlockingQueuedConnection);
         img_lists.push_back(y);
     }
 }
@@ -66,28 +66,29 @@ void img_reader::c_index(int i)
 
 void img_reader::loop()
 {
-    plist = _idir.entryList(filter,QDir::NoDotAndDotDot|QDir::Files,QDir::Time);
-    if(plist.isEmpty()){
-        thread()->sleep(1);
-    }
-    for(QString i:plist){
-        _file.setFileName(QString("%1/%2").arg(_idir.path()).arg(i));
-        img_lists[index]->img = QImage(_file.fileName());
-        emit readReady(index);
-        _file.rename(QString("%1/[%2]%3").arg(_odir.path()).arg(QDateTime::currentDateTime().toString("yyddMMHHmmss")).arg(i));
-        thread()->msleep(200);
-        if(cindex!=-1){
-            cindex++;
-            if(cindex == num){
-                cindex = -1;
+    while (state) {
+        plist = _idir.entryList(filter,QDir::NoDotAndDotDot|QDir::Files,QDir::Time);
+        if(plist.isEmpty()){
+            thread()->sleep(1);
+        }
+        for(QString i:plist){
+            _file.setFileName(QString("%1/%2").arg(_idir.path()).arg(i));
+            img_lists[index]->img = QImage(_file.fileName());
+            emit readReady(index);
+            _file.rename(QString("%1/[%2]%3").arg(_odir.path()).arg(QDateTime::currentDateTime().toString("yyddMMHHmmss")).arg(i));
+            thread()->msleep(200);
+            if(cindex!=-1){
+                cindex++;
+                if(cindex == num){
+                    cindex = -1;
+                }
+                emit click_index(cindex);
             }
-            emit click_index(cindex);
+            index++;
+            if(index == num){
+                index = 0;
+            }
         }
-        index++;
-        if(index == num){
-            index = 0;
-        }
+        plist.clear();
     }
-    plist.clear();
-    if(state)loop();
 }

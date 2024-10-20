@@ -19,6 +19,7 @@
 #include <QVBoxLayout>
 
 #include <QFileDialog>
+#include <myvideosurface.h>
 
 
 QT_BEGIN_NAMESPACE
@@ -35,12 +36,21 @@ public:
 
     bool eventFilter(QObject *watched, QEvent *event);
     void _deleteBefore();
+    void addRect(QRect,QString,int);
+
+    struct rsi{
+        QRect rect;
+        QString text;
+        QDateTime time;
+    };
 
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
     void enterWindows();
+    void checklist();
 
 private:
+    QList<rsi> _rsis;
 
     bool _pflag;
     int _tcount;
@@ -63,10 +73,14 @@ private:
     funlist* flist;
     //
     QTimer *timer;
+    QTimer *vtimer;
     //
     QCamera *C;
     QMediaPlaylist *L;
     QMediaPlayer *P;
+    myVideoSurface *myvs;
+    QPen pen;
+    QFont font;
 
     Ui::Widget *ui;
 };

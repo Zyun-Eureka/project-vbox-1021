@@ -18,6 +18,7 @@ SOURCES += \
     my_close.cpp \
     my_img.cpp \
     my_wi.cpp \
+    myvideosurface.cpp \
     widget.cpp
 
 HEADERS += \
@@ -26,6 +27,7 @@ HEADERS += \
     my_close.h \
     my_img.h \
     my_wi.h \
+    myvideosurface.h \
     widget.h
 
 FORMS += \

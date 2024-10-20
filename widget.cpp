@@ -7,6 +7,8 @@
 
 #include <QComboBox>
 
+#include <QGraphicsVideoItem>
+
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -42,9 +44,17 @@ Widget::Widget(QWidget *parent)
     ui->video->installEventFilter(this);
     ui->label->installEventFilter(this);
 
+    //
     C = nullptr;
     P = nullptr;
     L = new QMediaPlaylist();
+    myvs = new myVideoSurface(ui->video);
+    vtimer = new QTimer(this);
+    connect(vtimer,SIGNAL(timeout()),this,SLOT(checklist()));
+    vtimer->start(10);
+    pen.setColor(Qt::red);
+    font.setPixelSize(20);
+
 
     listLayout = new QVBoxLayout();
     _mlist = new QWidget();
@@ -60,6 +70,7 @@ Widget::Widget(QWidget *parent)
     _mlist->setLayout(listLayout);
     ui->list->setWidget(_mlist);
     ui->list->setWidgetResizable(true);
+    ui->splitter_2->setSizes({800,200});
 }
 
 Widget::~Widget()
@@ -95,13 +106,27 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
     }else if(watched == ui->video){
         if(event->type()==QEvent::Paint){
             QPainter pa(ui->video);
-            pa.fillRect(ui->video->rect(),Qt::black);
+            if(myvs->frame.isValid()){
+                QVideoFrame frame = myvs->frame;
+                frame.map(QAbstractVideoBuffer::ReadOnly);
+                QImage image = QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())).scaled(ui->video->size(),Qt::KeepAspectRatio);
+                pa.drawImage((ui->video->width()-image.width())/2.0,(ui->video->height()-image.height())/2.0,image);
+                frame.unmap();
+            }
+            if(!_rsis.isEmpty()){
+                pa.setPen(pen);
+                pa.setFont(font);
+                for(rsi &i:_rsis){
+                    pa.drawRect(i.rect);
+                    pa.drawText(i.rect.x(),i.rect.y()+font.pixelSize(),i.text);
+                }
+            }
         }
     }else if(watched == ui->label){
         if(event->type()==QEvent::ContextMenu){
             // 标题右键弹窗
             QDialog *d = new QDialog();
-            d->setGeometry(x(),y(),200,100);
+            d->setGeometry(x(),y()+30,200,100);
             QComboBox * box = new QComboBox(d);
             QPushButton *bt = new QPushButton(d);
             bt->setGeometry(25,60,90,30);
@@ -122,17 +147,22 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 if(!url.isEmpty()){
                     d->close();
                     P = new QMediaPlayer();
+                    connect(P,&QMediaPlayer::stateChanged,[=](QMediaPlayer::State s){
+                        if(s==QMediaPlayer::StoppedState){
+                            P->play();
+                        }
+                    });
                     L->addMedia(url);
-                    P->setVideoOutput(ui->video);
+                    P->setVideoOutput(myvs);
                     P->setPlaylist(L);
                     P->play();
                 }
             });
-            bt = new QPushButton(d);
-            bt->setGeometry(125,60,50,30);
-            bt->setText("确定");
+            QPushButton * bt1 = new QPushButton(d);
+            bt1->setGeometry(125,60,50,30);
+            bt1->setText("确定");
             box->setGeometry(25,20,150,30);
-            connect(bt,&QPushButton::released,[=](){
+            connect(bt1,&QPushButton::released,[=](){
                 d->close();
                 if(C!=nullptr){
                     C->stop();
@@ -140,7 +170,7 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                     C=nullptr;
                 }
                 C = new QCamera(QCameraInfo::availableCameras()[box->currentIndex()],this);
-                C->setViewfinder(ui->video);
+                C->setViewfinder(myvs);
                 C->start();
             });
             for(QCameraInfo i:QCameraInfo::availableCameras()){
@@ -149,14 +179,37 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             d->setWindowTitle("选择相机");
             d->exec();
             delete bt;
+            delete bt1;
             delete box;
             delete d;
         }else if(event->type()==QEvent::MouseButtonDblClick){
-            if(windowState()!=Qt::WindowFullScreen){
-                setWindowState(Qt::WindowFullScreen);
-            }else{
-                setWindowState(Qt::WindowNoState);
-            }
+            QDialog *d = new QDialog();
+            d->setGeometry(x(),y()+30,200,130);
+            QLineEdit *e = new QLineEdit(d);
+            e->setGeometry(25,20,150,30);
+            e->setPlaceholderText("输入要显示的文字");
+            QLineEdit* e1 = new QLineEdit(d);
+            e1->setGeometry(25,55,40,30);
+            e1->setPlaceholderText("X坐标");
+            QLineEdit* e2 = new QLineEdit(d);
+            e2->setGeometry(70,55,40,30);
+            e2->setPlaceholderText("Y坐标");
+            QLineEdit* e3 = new QLineEdit(d);
+            e3->setGeometry(115,55,60,30);
+            e3->setPlaceholderText("毫秒");
+            QPushButton* bt = new QPushButton(d);
+            bt->setGeometry(25,90,150,30);
+            bt->setText("确定");
+            connect(bt,&QPushButton::released,[=](){
+                d->close();
+                addRect(QRect(e1->text().toInt(),e2->text().toInt(),100,100),e->text(),e3->text().toInt());
+            });
+            d->exec();
+            delete e1;
+            delete e2;
+            delete e3;
+            delete bt;
+            delete d;
         }
     }
     return QWidget::eventFilter(watched,event);
@@ -187,6 +240,23 @@ void Widget::enterWindows()
     }
 }
 
+void Widget::checklist()
+{
+    if(_rsis.isEmpty())return;
+    QDateTime ct = QDateTime::currentDateTime();
+    int len = 0;
+    for(rsi &i:_rsis){
+        if(i.time>ct){
+            break;
+        }
+        len++;
+    }
+    if(len!=0){
+        _rsis = _rsis.mid(len);
+        ui->video->update();
+    }
+}
+
 //重置右侧列表坐标
 void Widget::updatepa()
 {
@@ -204,4 +274,13 @@ void Widget::_deleteBefore()
     reader->stop();
     thread->quit();
     thread->wait();
+}
+
+void Widget::addRect(QRect r, QString s, int i)
+{
+    rsi tr;
+    tr.rect = r;
+    tr.text = s;
+    tr.time = QDateTime::currentDateTime().addMSecs(i);
+    _rsis.push_back(tr);
 }

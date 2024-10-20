@@ -1,4 +1,5 @@
 #include "my_close.h"
+#include <QMessageBox>
 
 my_close::my_close(QObject *parent)
     : QObject{parent}

@@ -13,6 +13,5 @@ int main(int argc, char *argv[])
     Widget *w = new Widget();
     mc->add(w);
     w->show();
-
     return a.exec();
 }
