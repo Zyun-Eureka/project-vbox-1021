@@ -38,12 +38,14 @@ funlist::funlist(QWidget *parent) :
 
     file.close();
 
+    ui->icon->installEventFilter(this);
     ui->buttonArea->installEventFilter(this);
-    this->installEventFilter(this);
 
     timer = new QTimer(this);
     connect(timer,SIGNAL(timeout()),this,SLOT(timeOut()));
     timer->start(200);
+
+    popstate = false;
 }
 
 funlist::~funlist()
@@ -82,6 +84,12 @@ bool funlist::eventFilter(QObject *watched, QEvent *event)
                 bt->setMinimumHeight(bts.height());
             }
         }
+    }else if(watched == ui->icon){
+        if(event->type()==QEvent::MouseButtonRelease){
+            popstate = !popstate;
+            ui->label_3->setText(popstate?">>":"<<");
+            emit listShow(popstate);
+        }
     }
     return QWidget::eventFilter(watched,event);;
 }
@@ -91,16 +99,6 @@ void funlist::addvalue(int index)
     if(index>=_tableModel->rowCount()||index<0)return;
     _tableValues[index]++;
     _tableModel->item(index,1)->setText(QString::number(_tableValues[index]));
-}
-
-void funlist::ihide()
-{
-    ui->icon->hide();
-}
-
-void funlist::ishow()
-{
-    ui->icon->show();
 }
 
 void funlist::timeOut()

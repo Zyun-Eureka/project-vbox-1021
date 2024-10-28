@@ -28,6 +28,7 @@ Widget::Widget(QWidget *parent)
     flist = new funlist(this);
     flist->setGeometry(width()-40,0,flist->width(),height());
     flist->show();
+    connect(flist,SIGNAL(listShow(bool)),this,SLOT(listShow(bool)));
     // flsit animation init
     pa = new QPropertyAnimation(flist,"pos");
     pa->setDuration(150);
@@ -35,10 +36,7 @@ Widget::Widget(QWidget *parent)
     state = false;
     rs = false;
     updatepa();
-    // 动画倒计时器
-    timer = new QTimer();
-    connect(timer,SIGNAL(timeout()),this,SLOT(enterWindows()));
-    //
+
     installEventFilter(this);
     flist->installEventFilter(this);
     ui->video->installEventFilter(this);
@@ -89,18 +87,6 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 updatepa();
             }else{
                 rs = true;
-            }
-        }
-    }else if(watched == flist){
-        if(event->type()==QEvent::Enter){
-            // 鼠标放置后多少毫秒弹出
-            timer->start(3000);
-        }else if(event->type()==QEvent::Leave){
-            timer->stop();
-            if(pa->state()==QAbstractAnimation::Stopped&&state){
-                pa->start();
-                state = false;
-                flist->ishow();
             }
         }
     }else if(watched == ui->video){
@@ -230,14 +216,13 @@ void Widget::stateChanged(QAbstractAnimation::State news, QAbstractAnimation::St
     }
 }
 
-void Widget::enterWindows()
+void Widget::listShow(bool b)
 {
-    timer->stop();
-    if(pa->state()==QAbstractAnimation::Stopped&&!state){
-        pa->start();
-        state = true;
-        flist->ihide();
+    if(pa->state()!=QAbstractAnimation::Stopped){
+        pa->stop();
     }
+    pa->start();
+    state = b;
 }
 
 void Widget::checklist()
@@ -261,12 +246,14 @@ void Widget::checklist()
 void Widget::updatepa()
 {
     if(state){
-        flist->setGeometry(width()-flist->width(),0,width()*0.25,height());
+        flist->setGeometry(width()-width()*0.25,0,width()*0.25,height());
+        pa->setStartValue(QPoint(width()-40,0));
+        pa->setEndValue(flist->pos());
     }else{
         flist->setGeometry(width()-40,0,width()*0.25,height());
+        pa->setStartValue(flist->pos());
+        pa->setEndValue(QPoint(width()-flist->width(),0));
     }
-    pa->setStartValue(flist->pos());
-    pa->setEndValue(QPoint(width()-flist->width(),0));
 }
 
 void Widget::_deleteBefore()

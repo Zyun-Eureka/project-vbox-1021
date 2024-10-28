@@ -46,7 +46,7 @@ public:
 
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
-    void enterWindows();
+    void listShow(bool);
     void checklist();
 
 private:
@@ -72,7 +72,6 @@ private:
     bool state;
     funlist* flist;
     //
-    QTimer *timer;
     QTimer *vtimer;
     //
     QCamera *C;

@@ -38,7 +38,7 @@ void img_reader::setnum(int i)
     while (img_lists.count()<num) {
         y = new my_img();
         connect(y,SIGNAL(_sig_clicked(const my_img*)),_sig_thread,SIGNAL(_sig_img_change(const my_img*)));
-        connect(_sig_thread,SIGNAL(_sig_img_change(const my_img*)),y,SLOT(_slot_clicked(const my_img*)),Qt::BlockingQueuedConnection);
+        connect(_sig_thread,SIGNAL(_sig_img_change(const my_img*)),y,SLOT(_slot_clicked(const my_img*)));
         img_lists.push_back(y);
     }
 }

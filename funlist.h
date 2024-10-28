@@ -34,8 +34,11 @@ public:
 
     void addvalue(int index);
 
-    void ihide();
-    void ishow();
+//    void ihide();
+//    void ishow();
+
+signals:
+    void listShow(bool);
 
 private slots:
     void timeOut();
@@ -45,6 +48,8 @@ private:
 
     void initTable();
     void addItemT(QString name);
+
+    bool popstate;
 
     QSize bts;
     QWidget *_widget;
