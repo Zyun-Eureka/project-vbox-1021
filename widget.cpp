@@ -48,10 +48,13 @@ Widget::Widget(QWidget *parent)
     L = new QMediaPlaylist();
     myvs = new myVideoSurface(ui->video);
     vtimer = new QTimer(this);
+    mytf = new my_transform();
     connect(vtimer,SIGNAL(timeout()),this,SLOT(checklist()));
+    connect(this,SIGNAL(ssReady(QImage)),mytf,SLOT(GetImg(QImage)));
     vtimer->start(10);
     pen.setColor(Qt::red);
     font.setPixelSize(20);
+    screenshot = false;
 
 
     listLayout = new QVBoxLayout();
@@ -95,9 +98,18 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             if(myvs->frame.isValid()){
                 QVideoFrame frame = myvs->frame;
                 frame.map(QAbstractVideoBuffer::ReadOnly);
-                QImage image = QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())).scaled(ui->video->size(),Qt::KeepAspectRatio);
-                pa.drawImage((ui->video->width()-image.width())/2.0,(ui->video->height()-image.height())/2.0,image);
+                QImage image;
+                if(screenshot){
+                    screenshot = false;
+                    //Tips: 因为图像解码完后在这里会压缩到合适的大小再绘制到控件上，所以当有截图任务时会将原始图像传过去在压缩
+                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat()));
+                    emit ssReady(image);
+                    image=image.scaled(ui->video->size(),Qt::KeepAspectRatio);
+                }else{
+                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())).scaled(ui->video->size(),Qt::KeepAspectRatio);
+                }
                 frame.unmap();
+                pa.drawImage((ui->video->width()-image.width())/2.0,(ui->video->height()-image.height())/2.0,image);
             }
             if(!_rsis.isEmpty()){
                 pa.setPen(pen);
@@ -169,33 +181,34 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             delete box;
             delete d;
         }else if(event->type()==QEvent::MouseButtonDblClick){
-            QDialog *d = new QDialog();
-            d->setGeometry(x(),y()+30,200,130);
-            QLineEdit *e = new QLineEdit(d);
-            e->setGeometry(25,20,150,30);
-            e->setPlaceholderText("输入要显示的文字");
-            QLineEdit* e1 = new QLineEdit(d);
-            e1->setGeometry(25,55,40,30);
-            e1->setPlaceholderText("X坐标");
-            QLineEdit* e2 = new QLineEdit(d);
-            e2->setGeometry(70,55,40,30);
-            e2->setPlaceholderText("Y坐标");
-            QLineEdit* e3 = new QLineEdit(d);
-            e3->setGeometry(115,55,60,30);
-            e3->setPlaceholderText("毫秒");
-            QPushButton* bt = new QPushButton(d);
-            bt->setGeometry(25,90,150,30);
-            bt->setText("确定");
-            connect(bt,&QPushButton::released,[=](){
-                d->close();
-                addRect(QRect(e1->text().toInt(),e2->text().toInt(),100,100),e->text(),e3->text().toInt());
-            });
-            d->exec();
-            delete e1;
-            delete e2;
-            delete e3;
-            delete bt;
-            delete d;
+            screenshot = true;
+//            QDialog *d = new QDialog();
+//            d->setGeometry(x(),y()+30,200,130);
+//            QLineEdit *e = new QLineEdit(d);
+//            e->setGeometry(25,20,150,30);
+//            e->setPlaceholderText("输入要显示的文字");
+//            QLineEdit* e1 = new QLineEdit(d);
+//            e1->setGeometry(25,55,40,30);
+//            e1->setPlaceholderText("X坐标");
+//            QLineEdit* e2 = new QLineEdit(d);
+//            e2->setGeometry(70,55,40,30);
+//            e2->setPlaceholderText("Y坐标");
+//            QLineEdit* e3 = new QLineEdit(d);
+//            e3->setGeometry(115,55,60,30);
+//            e3->setPlaceholderText("毫秒");
+//            QPushButton* bt = new QPushButton(d);
+//            bt->setGeometry(25,90,150,30);
+//            bt->setText("确定");
+//            connect(bt,&QPushButton::released,[=](){
+//                d->close();
+//                addRect(QRect(e1->text().toInt(),e2->text().toInt(),100,100),e->text(),e3->text().toInt());
+//            });
+//            d->exec();
+//            delete e1;
+//            delete e2;
+//            delete e3;
+//            delete bt;
+//            delete d;
         }
     }
     return QWidget::eventFilter(watched,event);

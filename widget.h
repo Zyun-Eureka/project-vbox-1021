@@ -19,8 +19,8 @@
 #include <QVBoxLayout>
 
 #include <QFileDialog>
-#include <myvideosurface.h>
-
+#include "myvideosurface.h"
+#include "my_transform.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -44,6 +44,8 @@ public:
         QDateTime time;
     };
 
+signals:
+    void ssReady(QImage);
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
     void listShow(bool);
@@ -55,6 +57,7 @@ private:
     bool _pflag;
     int _tcount;
     QString url;
+
 
     QWidget* _mlist;
     QList<my_wi*> lists;
@@ -78,8 +81,11 @@ private:
     QMediaPlaylist *L;
     QMediaPlayer *P;
     myVideoSurface *myvs;
+    my_transform *mytf;
     QPen pen;
     QFont font;
+    bool screenshot;
+
 
     Ui::Widget *ui;
 };

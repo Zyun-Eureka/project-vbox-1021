@@ -3,7 +3,6 @@
 #include "my_close.h"
 #include "funlist.h"
 
-//#include "mycamera.h"
 
 int main(int argc, char *argv[])
 {
@@ -13,5 +12,6 @@ int main(int argc, char *argv[])
     Widget *w = new Widget();
     mc->add(w);
     w->show();
+
     return a.exec();
 }
