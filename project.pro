@@ -10,6 +10,9 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    ModelParser.cpp \
+    ModelProcessor.cpp \
+    Yolov5Session.cpp \
     funlist.cpp \
     img_reader.cpp \
     main.cpp \
@@ -21,6 +24,13 @@ SOURCES += \
     widget.cpp
 
 HEADERS += \
+    ISession.h \
+    Mics.h \
+    Model.h \
+    ModelParser.h \
+    ModelProcessor.h \
+    YoloDefine.h \
+    Yolov5Session.h \
     funlist.h \
     img_reader.h \
     my_close.h \
@@ -42,6 +52,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 win32: LIBS += $$PWD/Libs/opencv_4.2/lib/libopencv_*.dll.a
+win32: INCLUDEPATH += $$PWD/Libs/opencv_4.2/include
+win32: DEPENDPATH += $$PWD/Libs/opencv_4.2/include
 
-INCLUDEPATH += $$PWD/Libs/opencv_4.2/include
-DEPENDPATH += $$PWD/Libs/opencv_4.2/include
+unix:!macx:LIBS += $$PWD/../../../CMAKEINSTALL/opencv/lib/libopencv*
+unix:!macx:INCLUDEPATH += $$PWD/../../../CMAKEINSTALL/opencv/include/opencv4/
+unix:!macx:DEPENDPATH += $$PWD/../../../CMAKEINSTALL/opencv/include/opencv4/
+
+LIBS +=/home/eureka/CMAKEINSTALL/onnxruntime-linux-x64-1.18.0/lib/libonnxruntime.so
+INCLUDEPATH +=/home/eureka/CMAKEINSTALL/onnxruntime-linux-x64-1.18.0/include/

@@ -41,15 +41,10 @@ signals:
     void listShow(bool);
 
 private slots:
-    void timeOut();
 private:
-
-    QTimer *timer;
 
     void initTable();
     void addItemT(QString name);
-
-    bool popstate;
 
     QSize bts;
     QWidget *_widget;

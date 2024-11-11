@@ -19,7 +19,7 @@ Widget::Widget(QWidget *parent)
     // img list init
     reader = new img_reader();
     thread = new QThread(this);
-    reader->setnum(10);
+    reader->setnum(5);
     reader->moveToThread(thread);
     thread->start();
     reader->start();
@@ -41,6 +41,7 @@ Widget::Widget(QWidget *parent)
     flist->installEventFilter(this);
     ui->video->installEventFilter(this);
     ui->label->installEventFilter(this);
+    ui->result->installEventFilter(this);
 
     //
     C = nullptr;
@@ -60,7 +61,7 @@ Widget::Widget(QWidget *parent)
     listLayout = new QVBoxLayout();
     _mlist = new QWidget();
     my_wi *w;
-    for(int i = 10;i>0;i--){
+    for(int i = 5;i>0;i--){
         w = new my_wi();
         lists.push_back(w);
         listLayout->addWidget(w);
@@ -72,6 +73,7 @@ Widget::Widget(QWidget *parent)
     ui->list->setWidget(_mlist);
     ui->list->setWidgetResizable(true);
     ui->splitter_2->setSizes({800,200});
+
 }
 
 Widget::~Widget()
@@ -182,33 +184,10 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             delete d;
         }else if(event->type()==QEvent::MouseButtonDblClick){
             screenshot = true;
-//            QDialog *d = new QDialog();
-//            d->setGeometry(x(),y()+30,200,130);
-//            QLineEdit *e = new QLineEdit(d);
-//            e->setGeometry(25,20,150,30);
-//            e->setPlaceholderText("输入要显示的文字");
-//            QLineEdit* e1 = new QLineEdit(d);
-//            e1->setGeometry(25,55,40,30);
-//            e1->setPlaceholderText("X坐标");
-//            QLineEdit* e2 = new QLineEdit(d);
-//            e2->setGeometry(70,55,40,30);
-//            e2->setPlaceholderText("Y坐标");
-//            QLineEdit* e3 = new QLineEdit(d);
-//            e3->setGeometry(115,55,60,30);
-//            e3->setPlaceholderText("毫秒");
-//            QPushButton* bt = new QPushButton(d);
-//            bt->setGeometry(25,90,150,30);
-//            bt->setText("确定");
-//            connect(bt,&QPushButton::released,[=](){
-//                d->close();
-//                addRect(QRect(e1->text().toInt(),e2->text().toInt(),100,100),e->text(),e3->text().toInt());
-//            });
-//            d->exec();
-//            delete e1;
-//            delete e2;
-//            delete e3;
-//            delete bt;
-//            delete d;
+        }
+    }else if(watched == ui->result){
+        if(event->type()==QEvent::Resize){
+            ui->result->setMinimumHeight(ui->result->width()/2.0);
         }
     }
     return QWidget::eventFilter(watched,event);
