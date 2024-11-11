@@ -39,9 +39,15 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
+#encoding
+QMAKE_CXXFLAGS += /source-charset:utf-8 /execution-charset:utf-8
 
-
-win32: LIBS += $$PWD/Libs/opencv_4.2/lib/libopencv_*.dll.a
-
+#opencv
+win32:LIBS += -L$$PWD/Libs/opencv_4.2/lib/ -lopencv_*.lib
 INCLUDEPATH += $$PWD/Libs/opencv_4.2/include
 DEPENDPATH += $$PWD/Libs/opencv_4.2/include
+
+#onnxruntime
+win32: LIBS += -L$$PWD/Libs/onnxruntime_x64_1.18.0/lib/ -lonnxruntime.lib
+INCLUDEPATH += $$PWD/Libs/onnxruntime_x64_1.18.0/include
+DEPENDPATH += $$PWD/Libs/onnxruntime_x64_1.18.0/include

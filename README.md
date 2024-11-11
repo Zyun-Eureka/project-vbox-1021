@@ -15,7 +15,7 @@
 public slots:
     void my_transform::GetImg(QImage image) // in my_transform.h
 ```
-1. 考虑到openCV动态库过大就不添加至版本管理，我会单独发到群里
+3. 考虑到openCV动态库过大就不添加至版本管理，我会单独发到群里
 > Pro文件内库已配置为相对路径，下载并解压到项目目录内Libs文件夹即可使用
 
 > 因为截图是完整大小所以截图展示不全
