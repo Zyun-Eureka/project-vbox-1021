@@ -16,6 +16,7 @@ bool myVideoSurface::present(const QVideoFrame &frame)
     if (frame.isValid()) {
         this->frame = frame;
         widget->update();
+        emit imgready(frame.image());
         return true;
     }
     return false;

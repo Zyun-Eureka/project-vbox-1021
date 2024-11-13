@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QWidget>
 
+
+
 class myVideoSurface : public QAbstractVideoSurface
 {
     Q_OBJECT
@@ -13,8 +15,11 @@ public:
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType=QAbstractVideoBuffer::NoHandle)const;
     bool present(const QVideoFrame &);
     QVideoFrame frame;
+signals:
+    void imgready(QImage);
 private:
     QWidget *widget;
+
 };
 
 #endif // MYVIDEOSURFACE_H

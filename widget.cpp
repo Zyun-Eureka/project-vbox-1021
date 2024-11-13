@@ -19,7 +19,7 @@ Widget::Widget(QWidget *parent)
     // img list init
     reader = new img_reader();
     thread = new QThread(this);
-    reader->setnum(10);
+    reader->setnum(5);
     reader->moveToThread(thread);
     thread->start();
     reader->start();
@@ -41,26 +41,29 @@ Widget::Widget(QWidget *parent)
     flist->installEventFilter(this);
     ui->video->installEventFilter(this);
     ui->label->installEventFilter(this);
+    ui->result->installEventFilter(this);
 
     //
     C = nullptr;
     P = nullptr;
     L = new QMediaPlaylist();
     myvs = new myVideoSurface(ui->video);
-    vtimer = new QTimer(this);
-    mytf = new my_transform();
-    connect(vtimer,SIGNAL(timeout()),this,SLOT(checklist()));
-    connect(this,SIGNAL(ssReady(QImage)),mytf,SLOT(GetImg(QImage)));
-    vtimer->start(10);
-    pen.setColor(Qt::red);
-    font.setPixelSize(20);
-    screenshot = false;
+    mytf = new my_transform(nullptr);
+    connect(this,SIGNAL(ssReady(QImage)),mytf,SLOT(GetImgs(QImage)));
+//    vtimer = new QTimer(this);
 
+//    tpool = new my_threadpool();
+//    connect(myvs,SIGNAL(imgready(QImage)),tpool,SLOT(getImage(QImage)));
+//    connect(tpool,SIGNAL(ready(my_transform*)),this,SLOT(getimage(my_transform*)));
+//    connect(vtimer,SIGNAL(timeout()),this,SLOT(checklist()));
+//    vtimer->start(300);
+//    pen.setColor(Qt::red);
+//    font.setPixelSize(20);
 
     listLayout = new QVBoxLayout();
     _mlist = new QWidget();
     my_wi *w;
-    for(int i = 10;i>0;i--){
+    for(int i = 5;i>0;i--){
         w = new my_wi();
         lists.push_back(w);
         listLayout->addWidget(w);
@@ -72,6 +75,7 @@ Widget::Widget(QWidget *parent)
     ui->list->setWidget(_mlist);
     ui->list->setWidgetResizable(true);
     ui->splitter_2->setSizes({800,200});
+
 }
 
 Widget::~Widget()
@@ -96,29 +100,46 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
         if(event->type()==QEvent::Paint){
             QPainter pa(ui->video);
             if(myvs->frame.isValid()){
-                QVideoFrame frame = myvs->frame;
-                frame.map(QAbstractVideoBuffer::ReadOnly);
                 QImage image;
+                QMatrix rotationMatrix;
+                rotationMatrix.rotate(-90);  // 如果视频显示竖屏，需要旋转
                 if(screenshot){
                     screenshot = false;
-                    //Tips: 因为图像解码完后在这里会压缩到合适的大小再绘制到控件上，所以当有截图任务时会将原始图像传过去在压缩
-                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat()));
+                    image = myvs->frame.image().transformed(rotationMatrix);
                     emit ssReady(image);
                     image=image.scaled(ui->video->size(),Qt::KeepAspectRatio);
                 }else{
-                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())).scaled(ui->video->size(),Qt::KeepAspectRatio);
+                    image = myvs->frame.image().transformed(rotationMatrix).scaled(ui->video->size(),Qt::KeepAspectRatio);
                 }
-                frame.unmap();
                 pa.drawImage((ui->video->width()-image.width())/2.0,(ui->video->height()-image.height())/2.0,image);
             }
-            if(!_rsis.isEmpty()){
-                pa.setPen(pen);
-                pa.setFont(font);
-                for(rsi &i:_rsis){
-                    pa.drawRect(i.rect);
-                    pa.drawText(i.rect.x(),i.rect.y()+font.pixelSize(),i.text);
-                }
-            }
+
+
+            ////            pa.drawImage((ui->video->width()-mytf->img.width())/2.0,(ui->video->height()-mytf->img.height())/2.0,mytf->img);
+            //            if(false&&myvs->frame.isValid()){
+            //                QVideoFrame frame = myvs->frame;
+            ////                frame.map(QAbstractVideoBuffer::ReadOnly);
+            ////                qDebug()<<frame.startTime();
+
+            //                QMatrix rotationMatrix;
+            //                rotationMatrix.rotate(0);  // 如果视频显示竖屏，需要旋转
+            //                QImage image;
+            //                if(screenshot){
+            //                    screenshot = false;
+            //                    //Tips: 因为图像解码完后在这里会压缩到合适的大小再绘制到控件上，所以当有截图任务时会将原始图像传过去在压缩
+            ////                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat()));
+            //                    image = frame.image().transformed(rotationMatrix);
+            ////                    image = frame.image().transformed(rotationMatrix).scaled(ui->video->size(),Qt::KeepAspectRatio);
+            //                    emit ssReady(image);
+            ////                    qDebug()<<image.size();
+            //                    image=image.scaled(ui->video->size(),Qt::KeepAspectRatio);
+            ////                    qDebug()<<image.size();
+            //                }else{
+            ////                    image=QImage(frame.bits(),frame.width(),frame.height(),frame.bytesPerLine(),QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())).scaled(ui->video->size(),Qt::KeepAspectRatio);
+            //                    image = frame.image().transformed(rotationMatrix).scaled(ui->video->size(),Qt::KeepAspectRatio);
+            //                }
+            //                pa.drawImage((ui->video->width()-image.width())/2.0,(ui->video->height()-image.height())/2.0,image);
+            //            }
         }
     }else if(watched == ui->label){
         if(event->type()==QEvent::ContextMenu){
@@ -145,6 +166,7 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                 if(!url.isEmpty()){
                     d->close();
                     P = new QMediaPlayer();
+
                     connect(P,&QMediaPlayer::stateChanged,[=](QMediaPlayer::State s){
                         if(s==QMediaPlayer::StoppedState){
                             P->play();
@@ -167,6 +189,11 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
                     delete C;
                     C=nullptr;
                 }
+                if(P!=nullptr){
+                    P->stop();
+                    delete P;
+                    P=nullptr;
+                }
                 C = new QCamera(QCameraInfo::availableCameras()[box->currentIndex()],this);
                 C->setViewfinder(myvs);
                 C->start();
@@ -182,33 +209,10 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             delete d;
         }else if(event->type()==QEvent::MouseButtonDblClick){
             screenshot = true;
-//            QDialog *d = new QDialog();
-//            d->setGeometry(x(),y()+30,200,130);
-//            QLineEdit *e = new QLineEdit(d);
-//            e->setGeometry(25,20,150,30);
-//            e->setPlaceholderText("输入要显示的文字");
-//            QLineEdit* e1 = new QLineEdit(d);
-//            e1->setGeometry(25,55,40,30);
-//            e1->setPlaceholderText("X坐标");
-//            QLineEdit* e2 = new QLineEdit(d);
-//            e2->setGeometry(70,55,40,30);
-//            e2->setPlaceholderText("Y坐标");
-//            QLineEdit* e3 = new QLineEdit(d);
-//            e3->setGeometry(115,55,60,30);
-//            e3->setPlaceholderText("毫秒");
-//            QPushButton* bt = new QPushButton(d);
-//            bt->setGeometry(25,90,150,30);
-//            bt->setText("确定");
-//            connect(bt,&QPushButton::released,[=](){
-//                d->close();
-//                addRect(QRect(e1->text().toInt(),e2->text().toInt(),100,100),e->text(),e3->text().toInt());
-//            });
-//            d->exec();
-//            delete e1;
-//            delete e2;
-//            delete e3;
-//            delete bt;
-//            delete d;
+        }
+    }else if(watched == ui->result){
+        if(event->type()==QEvent::Resize){
+            ui->result->setMinimumHeight(ui->result->width()/2.0);
         }
     }
     return QWidget::eventFilter(watched,event);
@@ -240,6 +244,7 @@ void Widget::listShow(bool b)
 
 void Widget::checklist()
 {
+    //    qDebug()<<mytf->thread()->isFinished();
     if(_rsis.isEmpty())return;
     QDateTime ct = QDateTime::currentDateTime();
     int len = 0;
@@ -253,6 +258,11 @@ void Widget::checklist()
         _rsis = _rsis.mid(len);
         ui->video->update();
     }
+}
+
+void Widget::getimage(my_transform *i)
+{
+
 }
 
 //重置右侧列表坐标
@@ -284,3 +294,16 @@ void Widget::addRect(QRect r, QString s, int i)
     tr.time = QDateTime::currentDateTime().addMSecs(i);
     _rsis.push_back(tr);
 }
+
+//void Widget::on_checkBox_toggled(bool checked)
+//{
+//    if(checked){
+//        //        connect(myvs,SIGNAL(imgready(QImage)),,SLOT(getImage(QImage)));
+//        connect(myvs,&myVideoSurface::imgready,[=](QImage i){
+//            tpool->getImage(i.scaled(ui->video->size(),Qt::KeepAspectRatio));
+//        });
+//    }else{
+//        //        disconnect(myvs,SIGNAL(imgready(QImage)),tpool,SLOT(getImage(QImage)));
+//    }
+//}
+

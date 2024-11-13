@@ -21,6 +21,7 @@
 #include <QFileDialog>
 #include "myvideosurface.h"
 #include "my_transform.h"
+#include "my_threadpool.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -50,6 +51,9 @@ private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
     void listShow(bool);
     void checklist();
+    void getimage(my_transform*);
+
+//    void on_checkBox_toggled(bool checked);
 
 private:
     QList<rsi> _rsis;
@@ -81,7 +85,10 @@ private:
     QMediaPlaylist *L;
     QMediaPlayer *P;
     myVideoSurface *myvs;
+    my_threadpool *tpool;
     my_transform *mytf;
+
+
     QPen pen;
     QFont font;
     bool screenshot;

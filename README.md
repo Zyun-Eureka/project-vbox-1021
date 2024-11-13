@@ -1,6 +1,17 @@
 # 开发内容
 > DevBy: Eureka
-> 
+
+## Date: Nov 13
+1. 在 Windows 下编译器修改为修改 MSVC2019_64bit 需重新编译opencv动态库
+> 因 Windows 下 onnxruntime 官方提供的是 MSVC 动态库
+2. 添加 onnxruntime
+3. 双击截图添加模型识别并画线，使用前需添加模型路径
+``` cpp   
+   //in my_transform.cpp 
+   //line 16
+   session->Initialize("PutYourModelPath.onnx");
+```
+4. 新增识别线程池(因开发环境性能不足无法测试)
 
 ## Date: Oct 30
 1. - 添加openCV库，使用 QT5.15.2_MinGW_64bit 编译

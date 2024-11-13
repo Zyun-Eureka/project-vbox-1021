@@ -1,12 +1,21 @@
 #include "my_transform.h"
 #include <QDebug>
 
-my_transform::my_transform(QObject *parent)
-    : QObject{parent}
+#include <QPainter>
+#include <QThread>
+
+
+my_transform::my_transform(my_transform *next_tf, QObject *parent)
+    : QObject{parent},next(next_tf)
 {
     _myThread = new QThread();
     moveToThread(_myThread);
     _myThread->start();
+
+     session = new Yolov5Session();
+     session->Initialize("PutYourModelPath.onnx");
+
+     connect(this,SIGNAL(runs()),this,SLOT(GetImg()));
 }
 
 my_transform::~my_transform()
@@ -16,11 +25,33 @@ my_transform::~my_transform()
     delete _myThread;
 }
 
+void my_transform::run(QImage i)
+{
+    img = i;
+    emit runs();
+}
+
+void my_transform::GetImgs(QImage i)
+{
+    run(i);
+}
+
 //Qimage 转换 Mat 方法参考 https://www.kancloud.cn/digest/usingopencv/145304
 
-void my_transform::GetImg(QImage image)
+void my_transform::GetImg()
 {
-    ssMat = cv::Mat(image.height(), image.width(), CV_8UC4, (void*)image.constBits(), image.bytesPerLine());
+//    mutex.lock();
+    ssMat = cv::Mat(img.height(), img.width(), CV_8UC4, (void*)img.constBits(), img.bytesPerLine());
     //ssMat is ready
-    cv::imshow("img",ssMat);
+    auto result = session->Detect(ssMat);
+    for (const auto& det : result)
+    {
+        qDebug()<<det.classIdx<<det.x<<det.y<<det.w<<det.h;
+        QPainter pa(&img);
+        pa.setPen(Qt::red);
+        pa.drawRect(det.x,det.y,det.w,det.h);
+    }
+    emit ready();
+    cv::imshow("img",cv::Mat(img.height(), img.width(), CV_8UC4, (void*)img.constBits(), img.bytesPerLine()));
+//    mutex.unlock();
 }
