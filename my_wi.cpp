@@ -10,7 +10,7 @@ my_wi::my_wi(QWidget *parent)
     _rind =_nind= -1;
     click = false;
     _cimage = nullptr;
-
+    bkg.setColor(QColor("#2F343A"));
 }
 
 bool my_wi::eventFilter(QObject *watched, QEvent *event)
@@ -24,6 +24,8 @@ bool my_wi::eventFilter(QObject *watched, QEvent *event)
             if(lists->at(_rind)->click){
                 pen.setColor(Qt::red);
             }
+        }else{
+            pa.setBrush(bkg);
         }
         pa.setPen(pen);
         pa.drawRect(0,0,width()-pen.width()*2,height()-pen.width()*2);

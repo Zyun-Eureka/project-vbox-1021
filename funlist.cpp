@@ -135,3 +135,43 @@ void funlist::addItemT(QString name)
     _tableModel->appendRow({item,item_s});
     _tableValues.push_back(0);
 }
+
+void funlist::on_cutBox_released()
+{
+    emit setting(1,true,0);
+}
+
+
+void funlist::on_radius_currentIndexChanged(int index)
+{
+    emit setting(3,true,ui->radius->currentText().toInt());
+}
+
+
+void funlist::on_mirror_toggled(bool checked)
+{
+    emit setting(2,checked,0);
+    if(checked){
+        ui->mirror->setText("关闭");
+    }else{
+        ui->mirror->setText("启用");
+    }
+}
+
+
+void funlist::on_startopc_toggled(bool checked)
+{
+}
+
+
+void funlist::on_fps_valueChanged(int arg1)
+{
+    emit setting(5,true,arg1);
+}
+
+
+void funlist::on_startopc_clicked()
+{
+    emit setting(4,true,0);
+}
+

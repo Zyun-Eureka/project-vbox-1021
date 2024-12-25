@@ -22,6 +22,9 @@
 #include "myvideosurface.h"
 #include "my_transform.h"
 #include "my_threadpool.h"
+#include "cutboxwin.h"
+
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -51,10 +54,10 @@ private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
     void listShow(bool);
     void checklist();
-    void getimage(my_transform*);
+    void getimage(QImage i);
 
-//    void on_checkBox_toggled(bool checked);
-
+    //
+    void getFunListSetting(int,bool,double);
 private:
     QList<rsi> _rsis;
 
@@ -73,10 +76,10 @@ private:
     QThread *thread;
     int _img_index;
     my_wi * _mtmp;
-    QImage * _timg;
     QPropertyAnimation *pa;
     bool rs;
     bool state;
+    //
     funlist* flist;
     //
     QTimer *vtimer;
@@ -85,11 +88,25 @@ private:
     QMediaPlaylist *L;
     QMediaPlayer *P;
     myVideoSurface *myvs;
+    QImage _timg;
     my_threadpool *tpool;
     my_transform *mytf;
 
+    CutBoxWin *_cutB;
+    void setimg(QImage &img);
+    // cutbox resize flage
+    bool _cut_rs;
+    // tmp
+    int opencount;
+    QImage _opc_img;
+    // config
+    QMatrix _rotationMatrix;
+    bool _video_radiu;
+    bool _video_mirror;
+    bool _video_opencv;
 
-    QPen pen;
+
+
     QFont font;
     bool screenshot;
 

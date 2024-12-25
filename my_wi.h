@@ -22,6 +22,8 @@ public slots:
 signals:
     void click_index(int inex);
 private:
+
+    QBrush bkg;
     void _reisze();
     QList<my_img*> *lists;
     my_img* _cimage;

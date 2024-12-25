@@ -27,12 +27,10 @@ my_threadpool::~my_threadpool()
 
 void my_threadpool::getImage(QImage i)
 {
-//    qDebug()<<"get";
     _mytf_now = _mytf_latest;
     while (true) {
         if(_mytf_now->mutex.tryLock(0)){
             _mytf_now->run(i);
-//            qDebug()<<_mytf_now->thread()->currentThreadId()<<thread()->currentThread();
             _mytf_latest = _mytf_now->next;
             break;
         }else{

@@ -13,6 +13,7 @@ SOURCES += \
     ModelParser.cpp \
     ModelProcessor.cpp \
     Yolov5Session.cpp \
+    cutboxwin.cpp \
     funlist.cpp \
     img_reader.cpp \
     main.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     ModelProcessor.h \
     YoloDefine.h \
     Yolov5Session.h \
+    cutboxwin.h \
     funlist.h \
     img_reader.h \
     my_close.h \
@@ -43,6 +45,7 @@ HEADERS += \
     widget.h
 
 FORMS += \
+    cutboxwin.ui \
     funlist.ui \
     widget.ui
 

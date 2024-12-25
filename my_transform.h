@@ -22,19 +22,20 @@ public:
     QImage img;
     QMutex mutex;
     my_transform *next;
+
     void run(QImage);
 signals:
     void runs();
-    void ready();
+    void ready(QImage);
 public slots:
     void GetImgs(QImage);
-   void GetImg();
+    void GetImg();
 private:
-   QThread *_myThread;
-   cv::Mat ssMat;
+    QThread *_myThread;
+    cv::Mat ssMat;
 
 
-   ISession* session;
+    ISession* session;
 };
 
 #endif // MY_TRANSFORM_H

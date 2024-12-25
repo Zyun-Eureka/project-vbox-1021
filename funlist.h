@@ -31,16 +31,26 @@ public:
 
     QPushButton* addbutton(QString name);
     bool eventFilter(QObject *watched, QEvent *event);
-
     void addvalue(int index);
-
-//    void ihide();
-//    void ishow();
 
 signals:
     void listShow(bool);
 
+    void setting(int,bool,double);
+
 private slots:
+    void on_cutBox_released();
+
+    void on_radius_currentIndexChanged(int index);
+
+    void on_mirror_toggled(bool checked);
+
+    void on_startopc_toggled(bool checked);
+
+    void on_fps_valueChanged(int arg1);
+
+    void on_startopc_clicked();
+
 private:
 
     void initTable();

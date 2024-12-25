@@ -12,10 +12,10 @@ my_transform::my_transform(my_transform *next_tf, QObject *parent)
     moveToThread(_myThread);
     _myThread->start();
 
-     session = new Yolov5Session();
-     session->Initialize("PutYourModelPath.onnx");
+    session = new Yolov5Session();
+    session->Initialize("models/x_ray.onnx");
 
-     connect(this,SIGNAL(runs()),this,SLOT(GetImg()));
+    connect(this,SIGNAL(runs()),this,SLOT(GetImg()));
 }
 
 my_transform::~my_transform()
@@ -40,18 +40,17 @@ void my_transform::GetImgs(QImage i)
 
 void my_transform::GetImg()
 {
-//    mutex.lock();
+    //    mutex.lock();
     ssMat = cv::Mat(img.height(), img.width(), CV_8UC4, (void*)img.constBits(), img.bytesPerLine());
     //ssMat is ready
     auto result = session->Detect(ssMat);
     for (const auto& det : result)
     {
-        qDebug()<<det.classIdx<<det.x<<det.y<<det.w<<det.h;
         QPainter pa(&img);
         pa.setPen(Qt::red);
         pa.drawRect(det.x,det.y,det.w,det.h);
     }
-    emit ready();
-    cv::imshow("img",cv::Mat(img.height(), img.width(), CV_8UC4, (void*)img.constBits(), img.bytesPerLine()));
-//    mutex.unlock();
+    emit ready(img);
+    //    cv::imshow("img",cv::Mat(img.height(), img.width(), CV_8UC4, (void*)img.constBits(), img.bytesPerLine()));
+    //    mutex.unlock();
 }
