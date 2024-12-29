@@ -49,7 +49,7 @@ private slots:
 
     void on_fps_valueChanged(int arg1);
 
-    void on_startopc_clicked();
+    void on_enable_cut_toggled(bool checked);
 
 private:
 

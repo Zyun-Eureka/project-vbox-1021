@@ -25,6 +25,12 @@ public:
 
     QRect cutRect;
     QImage img;
+    QImage Frame;
+
+
+
+public slots:
+    void drawvideo(QImage);
 
 private:
     QRect _video_rect;

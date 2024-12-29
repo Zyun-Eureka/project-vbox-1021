@@ -144,7 +144,7 @@ void funlist::on_cutBox_released()
 
 void funlist::on_radius_currentIndexChanged(int index)
 {
-    emit setting(3,true,ui->radius->currentText().toInt());
+    emit setting(3,true,index);
 }
 
 
@@ -161,6 +161,12 @@ void funlist::on_mirror_toggled(bool checked)
 
 void funlist::on_startopc_toggled(bool checked)
 {
+    emit setting(4,checked,0);
+    if(checked){
+        ui->startopc->setText("关闭");
+    }else{
+        ui->startopc->setText("启用");
+    }
 }
 
 
@@ -169,9 +175,13 @@ void funlist::on_fps_valueChanged(int arg1)
     emit setting(5,true,arg1);
 }
 
-
-void funlist::on_startopc_clicked()
+void funlist::on_enable_cut_toggled(bool checked)
 {
-    emit setting(4,true,0);
+    if(checked){
+        ui->enable_cut->setText("停止裁切");
+    }else{
+        ui->enable_cut->setText("启用裁切");
+    }
+    emit setting(6,checked,0);
 }
 

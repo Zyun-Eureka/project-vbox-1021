@@ -21,10 +21,12 @@
 #include <QFileDialog>
 #include "myvideosurface.h"
 #include "my_transform.h"
-#include "my_threadpool.h"
 #include "cutboxwin.h"
 
+#include "my_camera_ocv.h"
+#include "my_yolo.h"
 
+#include "my_cut_config.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -40,26 +42,20 @@ public:
 
     bool eventFilter(QObject *watched, QEvent *event);
     void _deleteBefore();
-    void addRect(QRect,QString,int);
-
-    struct rsi{
-        QRect rect;
-        QString text;
-        QDateTime time;
-    };
 
 signals:
     void ssReady(QImage);
 private slots:
     void stateChanged(QAbstractAnimation::State,QAbstractAnimation::State);
     void listShow(bool);
-    void checklist();
+//    void checklist();
     void getimage(QImage i);
 
     //
     void getFunListSetting(int,bool,double);
+    void drawimage();
 private:
-    QList<rsi> _rsis;
+//    QList<rsi> _rsis;
 
     bool _pflag;
     int _tcount;
@@ -88,8 +84,8 @@ private:
     QMediaPlaylist *L;
     QMediaPlayer *P;
     myVideoSurface *myvs;
-    QImage _timg;
-    my_threadpool *tpool;
+
+//    my_threadpool *tpool;
     my_transform *mytf;
 
     CutBoxWin *_cutB;
@@ -98,7 +94,7 @@ private:
     bool _cut_rs;
     // tmp
     int opencount;
-    QImage _opc_img;
+
     // config
     QMatrix _rotationMatrix;
     bool _video_radiu;
@@ -107,10 +103,17 @@ private:
 
 
 
-    QFont font;
     bool screenshot;
 
-
+    //
+    my_camera_ocv *mco;
+    my_yolo *myo;
+    bool updateflage;
+    QFont vfont;
+    QPen vpen;
+    my_cut_config _mcc;
+    QImage vimg;
+//    QImage video_buffer;
     Ui::Widget *ui;
 };
 #endif // WIDGET_H

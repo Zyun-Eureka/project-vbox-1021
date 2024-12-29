@@ -13,6 +13,7 @@ CutBoxWin::CutBoxWin(QWidget *parent) :
     _cutbox_pen.setColor(Qt::red);
 
     ui->cutBox->installEventFilter(this);
+    installEventFilter(this);
     cutRect.setX(-1);
 }
 
@@ -89,6 +90,25 @@ bool CutBoxWin::eventFilter(QObject *watched, QEvent *event)
             cutRect.setX(ui->cutBox->x());
             cutRect.setY(ui->cutBox->y());
         }
+    }else if(watched == this){
+        if(event->type()==QEvent::Paint){
+            if(!isActiveWindow())return true;
+//            qDebug()<<"draw";
+            QPainter pa(this);
+            pa.drawImage(0,0,Frame);
+        }else if(event->type()==QEvent::Hide){
+            qDebug()<<"close";
+        }
     }
     return QWidget::eventFilter(watched,event);
+}
+
+void CutBoxWin::drawvideo(QImage i)
+{
+    if(this->size()!=i.size()){
+        this->setMaximumSize(i.size());
+        this->setMinimumSize(i.size());
+    }
+    Frame = i;
+    this->update();
 }

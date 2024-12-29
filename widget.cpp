@@ -15,8 +15,6 @@ Widget::Widget(QWidget *parent)
 {
     ui->setupUi(this);
 
-
-
     // img list init
     reader = new img_reader();
     thread = new QThread(this);
@@ -49,23 +47,6 @@ Widget::Widget(QWidget *parent)
     ui->label->installEventFilter(this);
     ui->result->installEventFilter(this);
 
-
-    //file & camere decoding
-    C = nullptr;
-    P = nullptr;
-    L = new QMediaPlaylist();
-    //video decoding & opencv
-    myvs = new myVideoSurface(ui->video);
-    connect(myvs,SIGNAL(imgready(QImage)),this,SLOT(getimage(QImage)));
-    mytf = new my_transform(nullptr);
-    connect(this,SIGNAL(ssReady(QImage)),mytf,SLOT(GetImgs(QImage)));
-    connect(mytf,&my_transform::ready,[&](QImage i){
-        if(_video_opencv){
-        _opc_img = i;
-        ui->video->update();
-        }
-    });
-
     //img list layout
     listLayout = new QVBoxLayout();
     _mlist = new QWidget();
@@ -87,11 +68,28 @@ Widget::Widget(QWidget *parent)
 
     //cutbox
     _cutB = new CutBoxWin();
-    _cutB->installEventFilter(this);
-    _cut_rs = false;
+    //    _cutB->installEventFilter(this);
+    //    _cut_rs = false;
 
     opencount = 0;
     _video_opencv =false;
+
+    // 12/26
+    mco = new my_camera_ocv();
+    //    mco->cutRect(100,100,200,200);
+    myo = new my_yolo();
+    myo->link(mco);
+    connect(myo,SIGNAL(readReady()),this,SLOT(drawimage()));
+    updateflage = false;
+    //    vfont.setWeight(10);
+    vpen.setColor(Qt::red);
+    vpen.setWidth(2);
+    vfont.setPixelSize(20);
+    vfont.setBold(true);
+
+    connect(&_mcc,&my_cut_config::cutRect,this,[&](int x,int y,int w,int h){
+        mco->cutRect(x,y,w,h);
+    });
 }
 
 Widget::~Widget()
@@ -116,24 +114,27 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
     }else if(watched == ui->video){
         // paint event
         if(event->type()==QEvent::Paint){
-            if(!_video_opencv){
-                if(_timg.isNull())return true;
-                QPainter pa(ui->video);
-                QImage i = _timg;
-                if(_cutB->cutRect.x()!=-1){
-                    i = i.copy(_cutB->cutRect);
-                }
-                i = i.scaled(ui->video->size(),Qt::KeepAspectRatio);
-                pa.drawImage((ui->video->width()-i.width())/2.0,(ui->video->height()-i.height())/2.0,i);
-            }else{
-                if(_opc_img.isNull())return true;
-                QPainter pa(ui->video);
-                QImage i = _opc_img;
-
-                pa.drawImage((ui->video->width()-i.width())/2.0,(ui->video->height()-i.height())/2.0,i);
+            if(updateflage)updateflage = false;
+            else return true;
+            if(myo->_img_buffer.isNull())return true;
+            QPainter pa(ui->video);
+            pa.setPen(vpen);
+            pa.setFont(vfont);
+            vimg = myo->_img_buffer.copy().scaled(ui->video->size(),Qt::KeepAspectRatio);
+            double x = (ui->video->width()-vimg.width())/2.0;
+            double y = (ui->video->height()-vimg.height())/2.0;
+            double w = vimg.width()*1.0/myo->_img_buffer.width();
+            double h = vimg.height()*1.0/myo->_img_buffer.height();
+            pa.drawImage(x,y,vimg);
+            for (const auto& det : myo->_result_buffer)
+            {
+                pa.drawText(x+det.x*w,y+det.y*h-vpen.width(),"手枪");
+                pa.drawRect(x+det.x*w,y+det.y*h,det.w*w,det.h*h);
             }
+            pa.drawText(10,30,QString("调试输出 FPS:%0 识别速度:%1ms").arg(myo->_cur_fps).arg(myo->_frame_delay));
         }
     }else if(watched == ui->label){
+        //        return false;
         if(event->type()==QEvent::ContextMenu){
             _cut_rs = false;
             QDialog *d = new QDialog();
@@ -143,31 +144,10 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             bt->setGeometry(25,60,90,30);
             bt->setText("从文件播放");
             connect(bt,&QPushButton::released,[=](){
-                if(C!=nullptr){
-                    C->stop();
-                    delete C;
-                    C=nullptr;
-                }
-                if(P!=nullptr){
-                    P->stop();
-                    delete P;
-                    P=nullptr;
-                }
-                L->clear();
                 QUrl url = QFileDialog::getOpenFileUrl(nullptr,"选择要播放的视频",QUrl(),"mp4视频文件 (*.mp4)");
                 if(!url.isEmpty()){
+                    mco->changeDev(url.toString().toLocal8Bit().data());
                     d->close();
-                    P = new QMediaPlayer();
-
-                    connect(P,&QMediaPlayer::stateChanged,[=](QMediaPlayer::State s){
-                        if(s==QMediaPlayer::StoppedState){
-                            P->play();
-                        }
-                    });
-                    L->addMedia(url);
-                    P->setVideoOutput(myvs);
-                    P->setPlaylist(L);
-                    P->play();
                 }
             });
             QPushButton * bt1 = new QPushButton(d);
@@ -176,22 +156,16 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
             box->setGeometry(25,20,150,30);
             connect(bt1,&QPushButton::released,[=](){
                 d->close();
-                if(C!=nullptr){
-                    C->stop();
-                    delete C;
-                    C=nullptr;
-                }
-                if(P!=nullptr){
-                    P->stop();
-                    delete P;
-                    P=nullptr;
-                }
-                C = new QCamera(QCameraInfo::availableCameras()[box->currentIndex()],this);
-                C->setViewfinder(myvs);
-                C->start();
+                mco->changeDev(box->currentText().toInt());
             });
-            for(QCameraInfo i:QCameraInfo::availableCameras()){
-                box->addItem(i.description());
+            int i =0;
+            mco->stop();
+            for(i;i<10;i++){
+                cv::VideoCapture vc(i);
+                if(vc.isOpened()){
+                    box->addItem(QString::number(i));
+                    vc.release();
+                }
             }
             d->setWindowTitle("选择相机");
             d->exec();
@@ -205,18 +179,6 @@ bool Widget::eventFilter(QObject *watched, QEvent *event)
     }else if(watched == ui->result){
         if(event->type()==QEvent::Resize){
             ui->result->setMinimumHeight(ui->result->width()/2.0);
-        }
-    }else if(watched == _cutB){
-        if(event->type()==QEvent::Paint){
-            QPainter pa(_cutB);
-            if(!_cut_rs){
-                _cutB->setMaximumSize(_timg.size());
-                _cutB->setMinimumSize(_timg.size());
-                _cut_rs = true;
-            }
-            pa.drawImage(0,0,_timg);
-        }else if(event->type()==QEvent::Hide){
-            myvs->ChangeWidget(ui->video);
         }
     }
     return QWidget::eventFilter(watched,event);
@@ -248,69 +210,72 @@ void Widget::listShow(bool b)
     state = b;
 }
 
-// tmp func for draw line
-void Widget::checklist()
-{
-    if(_rsis.isEmpty())return;
-    QDateTime ct = QDateTime::currentDateTime();
-    int len = 0;
-    for(rsi &i:_rsis){
-        if(i.time>ct){
-            break;
-        }
-        len++;
-    }
-    if(len!=0){
-        _rsis = _rsis.mid(len);
-        ui->video->update();
-    }
-}
-
 void Widget::getimage(QImage i)
 {
-    _timg = i;
-    setimg(_timg);
-    if(_cutB->isActiveWindow()){
-        _cut_rs = false;
-        _cutB->update();
-    }else if(_video_opencv){
-        opencount -=1;
-        if(opencount<=0)_video_opencv = false;
-        if(_cutB->cutRect.x()!=-1){
-            _timg = _timg.copy(_cutB->cutRect);
-        }
-        _timg = _timg.scaled(ui->video->size(),Qt::KeepAspectRatio);
-        emit ssReady(_timg);
-//        qDebug()<<opencount;
-    }else{
-        qDebug()<<"1";
-        ui->video->update();
-    }
+    //    _timg = i;
+    //    setimg(_timg);
+    //    if(_cutB->isActiveWindow()){
+    //        _cut_rs = false;
+    //        _cutB->update();
+    //    }else if(_video_opencv){
+    //        opencount -=1;
+    //        if(opencount<=0)_video_opencv = false;
+    //        if(_cutB->cutRect.x()!=-1){
+    //            _timg = _timg.copy(_cutB->cutRect);
+    //        }
+    //        _timg = _timg.scaled(ui->video->size(),Qt::KeepAspectRatio);
+    //        emit ssReady(_timg);
+    //    }else{
+    //        qDebug()<<"1";
+    //        ui->video->update();
+    //    }
 }
 
 void Widget::getFunListSetting(int i, bool b, double d)
 {
+    //    qDebug()<<i<<b<<d;
     if(i==1){
-        _cutB->show();
+        //        mco->fullOut();
+        //        _cutB->show();
+        _mcc.show();
     }else if(i==2){
         // mirror
-        _video_mirror = b;
+        //        _video_mirror = b;
+        mco->setMirror(b);
     }else if(i==3){
+        mco->setRate(d);
         // radius
-        _cut_rs = false;
-        _video_radiu = d!=0;
-        _rotationMatrix.rotate(d);
+        //        _cut_rs = false;
+        //        _video_radiu = d!=0;
+        //        _rotationMatrix.rotate(d);
     }else if(i==4){
         // start opencv
-        _video_opencv = b;
-        opencount = 1000/myvs->delays*10;
+        //        _video_opencv = b;
+        //        opencount = 1000/myvs->delays*10;
+        if(b){
+            myo->startcv();
+        }else{
+            myo->stopcv();
+        }
 
     }else if(i==5){
         // limit video fps
-        if(d==0)return;
-        myvs->delays = 1000/d;
+        //        if(d==0)return;
+        //        myvs->delays = 1000/d;
+    }else if(i==6){
+        if(b){
+            mco->cutOut();
+        }else{
+            mco->fullOut();
+        }
     }
 
+}
+
+void Widget::drawimage()
+{
+    ui->video->update();
+    updateflage = true;
 }
 
 //重置右侧列表坐标
@@ -343,13 +308,3 @@ void Widget::_deleteBefore()
     thread->quit();
     thread->wait();
 }
-// tmp func for draw line
-void Widget::addRect(QRect r, QString s, int i)
-{
-    rsi tr;
-    tr.rect = r;
-    tr.text = s;
-    tr.time = QDateTime::currentDateTime().addMSecs(i);
-    _rsis.push_back(tr);
-}
-
