@@ -20,7 +20,6 @@
 
 #include <QFileDialog>
 #include "myvideosurface.h"
-#include "my_transform.h"
 #include "cutboxwin.h"
 
 #include "my_camera_ocv.h"
@@ -86,7 +85,7 @@ private:
     myVideoSurface *myvs;
 
 //    my_threadpool *tpool;
-    my_transform *mytf;
+//    my_transform *mytf;
 
     CutBoxWin *_cutB;
     void setimg(QImage &img);
